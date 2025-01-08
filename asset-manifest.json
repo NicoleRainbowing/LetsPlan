@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/LetsPlan/static/js/main.6c12a4c1.js",
+    "index.html": "/LetsPlan/index.html",
+    "main.6c12a4c1.js.map": "/LetsPlan/static/js/main.6c12a4c1.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.6c12a4c1.js"
+  ]
+}
