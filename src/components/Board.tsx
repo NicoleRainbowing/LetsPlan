@@ -294,7 +294,9 @@ const Board: React.FC<BoardProps> = ({ type, state, setState, onMoveTask }) => {
               borderRadius: 2,
               boxShadow: 3
             }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>长期规划</Typography>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                {type === 'execution' ? '持续进行' : '长期规划'}
+              </Typography>
               <TaskList 
                 tasks={state.longTermTasks} 
                 type="longTerm"
