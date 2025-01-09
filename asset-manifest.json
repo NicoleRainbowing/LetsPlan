@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/LetsPlan/static/js/main.6c12a4c1.js",
+    "main.js": "/LetsPlan/static/js/main.d2a9b8e3.js",
     "index.html": "/LetsPlan/index.html",
-    "main.6c12a4c1.js.map": "/LetsPlan/static/js/main.6c12a4c1.js.map"
+    "main.d2a9b8e3.js.map": "/LetsPlan/static/js/main.d2a9b8e3.js.map"
   },
   "entrypoints": [
-    "static/js/main.6c12a4c1.js"
+    "static/js/main.d2a9b8e3.js"
   ]
 }
