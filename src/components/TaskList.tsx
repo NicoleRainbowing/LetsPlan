@@ -61,10 +61,32 @@ const TaskList: React.FC<TaskListProps> = ({
     return `${year}年${month}月${day}日${hour}:${minute}:${second}`;
   };
 
+  const formatDuration = (seconds: number): string => {
+    if (seconds < 60) return `${seconds}s`;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    
+    let result = '';
+    if (hours > 0) result += `${hours}h`;
+    if (minutes > 0) result += `${minutes}min`;
+    if (remainingSeconds > 0 || !result) result += `${remainingSeconds}s`;
+    return result;
+  };
+
   const renderTaskContent = (task: Task) => {
     const startTime = task.startTime ? formatTime(task.startTime) : '';
     const endTime = task.endTime ? `(${formatTime(task.endTime)}完成)` : '';
-    return `${startTime} ${task.content} ${endTime}`;
+    
+    let durationText = '';
+    if (task.duration || task.executionCount) {
+      const parts = [];
+      if (task.duration) parts.push(`持续：${formatDuration(task.duration)}`);
+      if (task.executionCount) parts.push(`${task.executionCount}次`);
+      durationText = `【${parts.join('+')}】`;
+    }
+
+    return `${durationText}${startTime} ${task.content} ${endTime}`;
   };
 
   const renderActionButton = (

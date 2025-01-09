@@ -16,6 +16,10 @@ export interface Task {
   category: TaskCategory;
   isDone: boolean;
   isPart?: boolean;
+  duration?: number;  // 持续时长（秒）
+  executionCount?: number;  // 执行次数
+  isRecording?: boolean;  // 是否正在记录时间
+  lastRecordTime?: number;  // 上次记录的时间戳
 }
 
 export interface SummaryData {

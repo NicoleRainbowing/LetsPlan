@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, Button, IconButton, Stack, Collapse } from '@mui/material';
 import TaskList from './TaskList';
 import TaskInput from './TaskInput';
@@ -31,6 +31,33 @@ const Board: React.FC<BoardProps> = ({ type, state, setState, onMoveTask }) => {
     { id: 'middleColumn', content: 'middle' },
     { id: 'rightColumn', content: 'right' }
   ]);
+  const [activeTimer, setActiveTimer] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+
+  useEffect(() => {
+    if (activeTimer) {
+      const timer = setInterval(() => {
+        setCurrentTime(Date.now());
+        
+        setState(prev => {
+          const newState = { ...prev };
+          (Object.keys(newState) as TaskListKey[]).forEach(key => {
+            if (Array.isArray(newState[key])) {
+              const task = newState[key].find(t => t.id === activeTimer);
+              if (task && task.isRecording && task.lastRecordTime) {
+                const elapsed = Math.floor((Date.now() - task.lastRecordTime) / 1000);
+                task.duration = (task.duration || 0) + elapsed;
+                task.lastRecordTime = Date.now();
+              }
+            }
+          });
+          return newState;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [activeTimer, setState]);
 
   const handleEdit = (task: Task) => {
     setEditingTask(task);
@@ -58,14 +85,38 @@ const Board: React.FC<BoardProps> = ({ type, state, setState, onMoveTask }) => {
   };
 
   const handleDoing = (task: Task, fromList: TaskListKey) => {
+    const now = Date.now();
     const updatedTask = {
       ...task,
       startTime: task.startTime || new Date().toISOString(),
       isDone: false,
-      endTime: undefined
+      endTime: undefined,
+      isRecording: true,  // 自动开始计时
+      lastRecordTime: now
     };
 
-    setState((prev: BoardState) => {
+    // 停止当前正在计时的任务
+    if (activeTimer) {
+      setState(prev => {
+        const newState = { ...prev };
+        (Object.keys(newState) as TaskListKey[]).forEach(key => {
+          if (Array.isArray(newState[key])) {
+            const task = newState[key].find(t => t.id === activeTimer);
+            if (task && task.isRecording) {
+              const elapsed = Math.floor((now - (task.lastRecordTime || now)) / 1000);
+              task.duration = (task.duration || 0) + elapsed;
+              task.isRecording = false;
+              task.lastRecordTime = undefined;
+            }
+          }
+        });
+        return newState;
+      });
+    }
+
+    setActiveTimer(updatedTask.id);
+
+    setState(prev => {
       const newState = { ...prev };
       newState[fromList] = prev[fromList].filter(t => t.id !== task.id);
       newState.doingTasks = [...prev.doingTasks, updatedTask];
@@ -74,13 +125,26 @@ const Board: React.FC<BoardProps> = ({ type, state, setState, onMoveTask }) => {
   };
 
   const handleDone = (task: Task, fromList: TaskListKey) => {
+    const now = Date.now();
     const updatedTask = {
       ...task,
       endTime: new Date().toISOString(),
-      isDone: true
+      isDone: true,
+      isRecording: false,
+      lastRecordTime: undefined
     };
 
-    setState((prev: BoardState) => {
+    // 如果是正在计时的任务，更新最终时长
+    if (task.isRecording && task.lastRecordTime) {
+      const elapsed = Math.floor((now - task.lastRecordTime) / 1000);
+      updatedTask.duration = (task.duration || 0) + elapsed;
+    }
+
+    if (activeTimer === task.id) {
+      setActiveTimer(null);
+    }
+
+    setState(prev => {
       const newState = { ...prev };
       newState[fromList] = prev[fromList].filter(t => t.id !== task.id);
       newState.doneTasks = [...prev.doneTasks, updatedTask];
@@ -272,10 +336,74 @@ const Board: React.FC<BoardProps> = ({ type, state, setState, onMoveTask }) => {
   };
 
   const handleMoveToLongTerm = (task: Task, fromList: TaskListKey) => {
+    // 如果是从正在执行移动到长期规划，保持计时状态
+    const keepTimer = fromList === 'doingTasks';
+    
     setState(prev => {
       const newState = { ...prev };
       newState[fromList] = prev[fromList].filter(t => t.id !== task.id);
-      newState.longTermTasks = [...prev.longTermTasks, task];  // 保持原有的开始时间
+      newState.longTermTasks = [...prev.longTermTasks, {
+        ...task,
+        isRecording: keepTimer ? task.isRecording : false,
+        lastRecordTime: keepTimer ? task.lastRecordTime : undefined
+      }];
+      return newState;
+    });
+  };
+
+  const handleTimerClick = (taskId: string) => {
+    setState(prev => {
+      const newState = { ...prev };
+      const now = Date.now();
+
+      // 处理之前的计时任务
+      if (activeTimer) {
+        (Object.keys(newState) as TaskListKey[]).forEach(key => {
+          if (Array.isArray(newState[key])) {
+            const task = newState[key].find(t => t.id === activeTimer);
+            if (task && task.isRecording) {
+              const elapsed = Math.floor((now - (task.lastRecordTime || now)) / 1000);
+              task.duration = (task.duration || 0) + elapsed;
+              task.isRecording = false;
+              task.lastRecordTime = undefined;
+            }
+          }
+        });
+      }
+
+      // 处理当前任务
+      (Object.keys(newState) as TaskListKey[]).forEach(key => {
+        if (Array.isArray(newState[key])) {
+          const task = newState[key].find(t => t.id === taskId);
+          if (task) {
+            if (!task.isRecording) {
+              task.isRecording = true;
+              task.lastRecordTime = now;
+              setActiveTimer(taskId);
+            } else {
+              task.isRecording = false;
+              task.lastRecordTime = undefined;
+              setActiveTimer(null);
+            }
+          }
+        }
+      });
+
+      return newState;
+    });
+  };
+
+  const handleIncreaseCount = (taskId: string) => {
+    setState(prev => {
+      const newState = { ...prev };
+      (Object.keys(newState) as TaskListKey[]).forEach(key => {
+        if (Array.isArray(newState[key])) {
+          const task = newState[key].find(t => t.id === taskId);
+          if (task) {
+            task.executionCount = (task.executionCount || 0) + 1;
+          }
+        }
+      });
       return newState;
     });
   };

@@ -1,12 +1,29 @@
 import { useState, useEffect } from 'react';
-import { BoardState } from '../types';
+import { BoardState, Task, TaskListKey } from '../types';
 
 const useLocalStorage = (key: string, initialValue: BoardState) => {
   // 获取初始值
   const [state, setState] = useState<BoardState>(() => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      if (item) {
+        const parsedState = JSON.parse(item);
+        // 恢复计时状态
+        Object.keys(parsedState).forEach((listKey) => {
+          if (Array.isArray(parsedState[listKey])) {
+            parsedState[listKey].forEach((task: Task) => {
+              if (task.isRecording && task.lastRecordTime) {
+                const elapsed = Math.floor((Date.now() - task.lastRecordTime) / 1000);
+                task.duration = (task.duration || 0) + elapsed;
+                task.isRecording = false;
+                task.lastRecordTime = undefined;
+              }
+            });
+          }
+        });
+        return parsedState;
+      }
+      return initialValue;
     } catch (error) {
       console.error('Error reading from localStorage:', error);
       return initialValue;
