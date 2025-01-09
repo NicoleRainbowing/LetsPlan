@@ -345,10 +345,10 @@ const MobileBoard: React.FC<MobileBoardProps> = ({ type, state, setState, onMove
           )}
         </Paper>
 
-        {/* 长期规划 */}
+        {/* 长期规划/持续进行 */}
         <Paper sx={{ p: 2 }}>
           <SectionHeader 
-            title="长期规划" 
+            title={type === 'execution' ? "持续进行" : "长期规划"} 
             section="longTerm"
             count={state.longTermTasks.length}
           />
